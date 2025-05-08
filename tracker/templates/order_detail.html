@@ -1,0 +1,149 @@
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f6f6f6;
+        margin: 2rem;
+    }
+
+    .order-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        max-width: 1200px;
+        margin: auto;
+    }
+
+    .order-container {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .left-column {
+        flex: 1;
+    }
+
+    .right-column {
+        width: 400px;
+        flex-shrink: 0;
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .order-status {
+        padding: 5px 10px;
+        border-radius: 5px;
+        color: white;
+        background-color: #3b82f6;
+        font-weight: bold;
+    }
+
+    .section {
+        margin-bottom: 1.5rem;
+    }
+
+    .product-list, .status-list, .employee-list {
+        padding-left: 1rem;
+    }
+
+    .product-item, .status-item, .employee-item {
+        margin-bottom: 5px;
+    }
+
+    h3 {
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .completed {
+        color: green;
+    }
+
+    .incomplete {
+        color: orange;
+    }
+</style>
+
+<div class="order-card">
+    <div class="order-header">
+        <h2>Заказ №{{ order.order_id }}</h2>
+        <div class="order-status">{{ order.get_status_display }}</div>
+    </div>
+
+    <div class="order-container">
+        <div class="left-column">
+            <div class="section"><strong>Дата заказа:</strong> {{ order.order_date }}</div>
+            <div class="section"><strong>Клиент:</strong> {{ order.client }}</div>
+            <div class="section"><strong>Адрес доставки:</strong> {{ order.address }}</div>
+            <div class="section"><strong>Сумма заказа:</strong> {{ order.total_amount }} ₽</div>
+
+            <div class="section">
+                <h3>Товары</h3>
+                <ul class="product-list">
+                    {% for product in order.products.all %}
+                        <li class="product-item">{{ product.title }} – {{ product.price }} ₽</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>История этапов</h3>
+                <ul class="status-list">
+                    {% for history in status_history %}
+                        <li class="status-item">
+                            {{ history.get_status_display }} — {{ history.timestamp }}
+                            {% if history.completed %}
+                                <span class="completed">(завершено)</span>
+                            {% else %}
+                                <span class="incomplete">(в процессе)</span>
+                            {% endif %}
+                        </li>
+                    {% empty %}
+                        <li>История этапов отсутствует.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>Ответственные сотрудники</h3>
+                <ul class="employee-list">
+                    {% for eh in employees_history %}
+                        <li class="employee-item">
+                            {{ eh.employee }} — {{ eh.task }}
+                        </li>
+                    {% empty %}
+                        <li>Сотрудники не назначены.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="section">
+                <h3>Задачи по заказу</h3>
+                <ul class="employee-list">
+                    {% for task in tasks %}
+                        <div>
+                            <strong>{{ task.employee }} ({{ task.status }}):</strong>
+                            {% if task.is_completed %}
+                                ✅ Завершено
+                            {% elif task.is_active %}
+                                <form method="post" action="{% url 'tracker:order_detail' order.order_id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="complete_task" value="{{ task.pk }}">
+                                    <button type="submit">Завершить</button>
+                                </form>
+                            {% else %}
+                                ⏳ Ожидает
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
