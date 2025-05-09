@@ -1,24 +1,18 @@
 from django.contrib import admin
 from django.db.models import Field, ForeignKey, ManyToManyField
-from django.utils.html import format_html
 from django.urls import reverse
+from django.utils.html import format_html
 
-from tracker.models import (
-    Address,
-    Order,
-    OrderEmployeeHistory,
-    OrderStatusHistory,
-    Product,
-    OrderProduct,
-    ShippingZone,
-    Task
-)
+from tracker.models import (Address, Order, OrderEmployeeHistory, OrderProduct,
+                            OrderStatusHistory, Product, ShippingZone, Task)
 
 from .models import Client, Department, Employee, User
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
+    """Регистрация в панели для пользователя."""
+
     list_display = [
         field.name
         for field in User._meta.get_fields()
@@ -42,6 +36,8 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(ShippingZone)
 class ShippingZoneAdmin(admin.ModelAdmin):
+    """Регистрация в панели для зон отгрузки."""
+
     list_display = [
         "name",
         "description",
@@ -58,6 +54,8 @@ class ShippingZoneAdmin(admin.ModelAdmin):
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
+    """Регистрация в панели для сотрудника."""
+
     list_display = [
         "position",
         "employee_id",
@@ -68,8 +66,9 @@ class EmployeeAdmin(admin.ModelAdmin):
     ]
 
     def active_tasks(self, obj):
-        return Task.objects.filter(employee=obj, status__in=["assigned", "in_progress"]).count()
-
+        return Task.objects.filter(
+            employee=obj, status__in=["assigned", "in_progress"]
+        ).count()
 
     search_fields = [
         "position",
@@ -77,7 +76,6 @@ class EmployeeAdmin(admin.ModelAdmin):
         "work_vacation",
         "day_off",
         "shipping_zone",
-
     ]
     list_filter = [
         "position",
@@ -88,9 +86,10 @@ class EmployeeAdmin(admin.ModelAdmin):
     ]
 
 
-
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
+    """Регистрация в панели для клиента."""
+
     list_display = [
         field.name
         for field in Client._meta.get_fields()
@@ -114,6 +113,8 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
+    """Регистрация в панели для отдела."""
+
     list_display = [
         field.name
         for field in Department._meta.get_fields()
@@ -137,6 +138,8 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
+    """Регистрация в панели для адреса."""
+
     list_display = [
         field.name
         for field in Address._meta.get_fields()
@@ -160,8 +163,14 @@ class AddressAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    """Регистрация в панели для товара."""
+
     list_display = [
-        "pk", "title", "price", "description", "department",
+        "pk",
+        "title",
+        "price",
+        "description",
+        "department",
         "amount_remains",
         "amount_supplier",
         "supplier",
@@ -179,11 +188,13 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 class OrderProductInline(admin.TabularInline):
+    """Регистрация в панели для промежуточной модели вычисления общей цены."""
+
     model = OrderProduct
     extra = 1
-    autocomplete_fields = ['product']
-    fields = ['product', 'quantity', 'price']
-    readonly_fields = ['price']
+    autocomplete_fields = ["product"]
+    fields = ["product", "quantity", "price"]
+    readonly_fields = ["price"]
 
     def price(self, obj):
         if obj.product:
@@ -193,6 +204,8 @@ class OrderProductInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    """Регистрация в панели для заказа."""
+
     inlines = [OrderProductInline]
 
     def get_form(self, request, obj=None, **kwargs):
@@ -205,12 +218,12 @@ class OrderAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         print(f"[ADMIN] save_model: AFTER save, obj.pk = {obj.pk}")
 
-        # Только если заказ уже создан (не новый)
+        # Только если заказ уже создан
         if not is_new:
             obj.calculate_total(save=True)
 
             # Меняем статус, если он не PROCESSING
-            if obj.status != 'PROCESSING':
+            if obj.status != "PROCESSING":
                 obj.change_status(new_status="PROCESSING")
 
     def save_related(self, request, form, formsets, change):
@@ -221,15 +234,19 @@ class OrderAdmin(admin.ModelAdmin):
 
         if change is False and order_id:
             from tracker.tasks import create_order_task_chain
-            print(f"[ADMIN] launching create_order_task_chain for order_id = {order_id}")
+
+            print(
+                f"[ADMIN] launching create_order_task_chain for order_id = {order_id}"
+            )
             create_order_task_chain.apply_async(args=[order_id])
         else:
             print("[ADMIN] Not launching task — either not new or order_id is None")
 
 
-
 @admin.register(OrderStatusHistory)
 class OrderStatusHistoryAdmin(admin.ModelAdmin):
+    """Регистрация в панели для истории статусов заказа."""
+
     list_display = [
         field.name
         for field in OrderStatusHistory._meta.get_fields()
@@ -253,6 +270,8 @@ class OrderStatusHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(OrderEmployeeHistory)
 class OrderEmployeeHistoryAdmin(admin.ModelAdmin):
+    """Регистрация в панели для истории сотрудников, которые работали с заказом."""
+
     list_display = [
         field.name
         for field in OrderEmployeeHistory._meta.get_fields()
@@ -274,19 +293,27 @@ class OrderEmployeeHistoryAdmin(admin.ModelAdmin):
     ]
 
 
-
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = (
-        'status', 'task_id', 'order_link', 'employee', 'shipping_zone',
-        'created_at', 'due_date', 'is_completed', 'is_active'
-    )
-    list_filter = ('status', 'employee', 'order', "is_completed", 'is_active')
-    search_fields = ('status', 'order__order_id', 'employee__name', 'is_active')
-    ordering = ('-status',)
-    date_hierarchy = 'created_at'
+    """Регистрация в панели для задач."""
 
-    @admin.display(description='Заказ')
+    list_display = (
+        "status",
+        "task_id",
+        "order_link",
+        "employee",
+        "shipping_zone",
+        "created_at",
+        "due_date",
+        "is_completed",
+        "is_active",
+    )
+    list_filter = ("status", "employee", "order", "is_completed", "is_active")
+    search_fields = ("status", "order__order_id", "employee__name", "is_active")
+    ordering = ("-status",)
+    date_hierarchy = "created_at"
+
+    @admin.display(description="Заказ")
     def order_link(self, obj):
         if obj.order:
             url = reverse("admin:tracker_order_change", args=[obj.order.pk])

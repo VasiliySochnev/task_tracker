@@ -113,7 +113,7 @@ class Employee(User):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Зона отгрузки (для логистов, курьеров и приемщиков)"
+        verbose_name="Зона отгрузки (для логистов, курьеров и приемщиков)",
     )
 
     def __str__(self):

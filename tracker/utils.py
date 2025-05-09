@@ -1,11 +1,12 @@
-from django.utils import timezone
 from django.db import transaction
-from tracker.models import OrderEmployeeHistory, OrderStatusHistory, Task, OrderStatus
-from users.models import Employee
+from django.utils import timezone
+
+from tracker.models import (OrderEmployeeHistory, OrderStatus,
+                            OrderStatusHistory, Task)
 from tracker.services import assign_task_to_employee  # Метод назначения задач
 
 
-def complete_and_create_next(task: Task) -> None:
+def complete_and_create_next(task: Task):
     """
     Завершает текущую задачу и создает следующую (если применимо), обновляя историю и статус заказа.
 
@@ -45,18 +46,18 @@ def complete_and_create_next(task: Task) -> None:
             employee=task.employee,
             assigned_at=task.created_at,
             completed_at=timezone.now(),
-            task=task
+            task=task,
         )
 
         # Проверка, существует ли уже запись о текущем статусе
         existing_incomplete = OrderStatusHistory.objects.filter(
-            order=task.order,
-            status=task.status,
-            completed=False
+            order=task.order, status=task.status, completed=False
         ).first()
 
         # Если запись уже есть и все задачи по статусу завершены — отмечаем как завершённую
-        unfinished_same_stage = task.order.tasks.filter(status=task.status, is_completed=False).exists()
+        unfinished_same_stage = task.order.tasks.filter(
+            status=task.status, is_completed=False
+        ).exists()
 
         if existing_incomplete:
             if not unfinished_same_stage:
@@ -68,7 +69,7 @@ def complete_and_create_next(task: Task) -> None:
                 order=task.order,
                 status=task.status,
                 timestamp=timezone.now(),
-                completed=not unfinished_same_stage
+                completed=not unfinished_same_stage,
             )
 
         # Получаем следующий статус
@@ -76,10 +77,20 @@ def complete_and_create_next(task: Task) -> None:
 
         # Проверка условий перед переходом к доставке
         if next_status == OrderStatus.DELIVERY:
-            all_received = task.order.tasks.filter(status=OrderStatus.AT_SHIPPING_AREA).exclude(is_completed=True).exists()
-            docs_prepared = task.order.tasks.filter(status=OrderStatus.DOC_PREPARATION).exclude(is_completed=True).exists()
+            all_received = (
+                task.order.tasks.filter(status=OrderStatus.AT_SHIPPING_AREA)
+                .exclude(is_completed=True)
+                .exists()
+            )
+            docs_prepared = (
+                task.order.tasks.filter(status=OrderStatus.DOC_PREPARATION)
+                .exclude(is_completed=True)
+                .exists()
+            )
             if all_received or docs_prepared:
-                print("Нельзя переходить к доставке: приемка или документы не завершены.")
+                print(
+                    "Нельзя переходить к доставке: приемка или документы не завершены."
+                )
                 return
 
         # Если следующего статуса нет — завершаем заказ
@@ -99,9 +110,13 @@ def complete_and_create_next(task: Task) -> None:
 
         # Если есть незавершённые задачи предыдущего этапа — приостанавливаем переход
         if next_status == OrderStatus.AT_SHIPPING_AREA:
-            incomplete_tasks = task.order.tasks.filter(status=OrderStatus.TO_SHIPPING_AREA, is_completed=False)
+            incomplete_tasks = task.order.tasks.filter(
+                status=OrderStatus.TO_SHIPPING_AREA, is_completed=False
+            )
             if incomplete_tasks.exists():
-                print(f"Еще не все грузчики завершили задачи для заказа {task.order.pk}, приемщик пока не назначается.")
+                print(
+                    f"Еще не все грузчики завершили задачи для заказа {task.order.pk}, приемщик пока не назначается."
+                )
                 return
 
         # Назначаем следующую задачу
@@ -109,12 +124,14 @@ def complete_and_create_next(task: Task) -> None:
             task.order,
             new_status=next_position,
             department=task.department,
-            shipping_zone=task.shipping_zone
+            shipping_zone=task.shipping_zone,
         )
 
         # Финальная проверка завершенности всех задач
         if all_tasks_completed(task.order):
-            print(f"Все задачи завершены для заказа {task.order.pk}. Статус заказа обновлен.")
+            print(
+                f"Все задачи завершены для заказа {task.order.pk}. Статус заказа обновлен."
+            )
         else:
             print(f"Некоторые задачи все еще не завершены для заказа {task.order.pk}.")
 
