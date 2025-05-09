@@ -9,8 +9,6 @@ from tracker.services import assign_task_to_employee  # Метод назнач�
 def complete_and_create_next(task: Task):
     """
     Завершает текущую задачу и создает следующую (если применимо), обновляя историю и статус заказа.
-
-    :param task: Объект текущей задачи, подлежащей завершению.
     """
     # Сопоставление статусов с ключами для назначения задач
     status_to_position = {
@@ -139,9 +137,6 @@ def complete_and_create_next(task: Task):
 def all_tasks_completed(order) -> bool:
     """
     Проверяет, завершены ли все задачи по заказу.
-
-    :param order: Объект заказа.
-    :return: True, если все задачи завершены, иначе False.
     """
     tasks = order.tasks.all()
     for task in tasks:

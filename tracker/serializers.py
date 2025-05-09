@@ -5,18 +5,27 @@ from .models import (Address, Order, OrderEmployeeHistory, OrderProduct,
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели товара.
+    """
     class Meta:
         model = Product
         fields = "__all__"
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели задача.
+    """
     class Meta:
         model = Task
         fields = "__all__"
 
 
 class TaskSummarySerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для получения активных задач по конкретному заказу.
+    """
     order = serializers.StringRelatedField()
     task_status = serializers.CharField(source="status")
     task_created_at = serializers.DateTimeField(source="created_at")
@@ -50,30 +59,48 @@ class TaskSummarySerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели заказа.
+    """
     class Meta:
         model = Order
         fields = "__all__"
 
 
 class AddressSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели адреса.
+    """
     class Meta:
         model = Address
         fields = "__all__"
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для промежуточной модели
+    товара и заказа.
+    """
     class Meta:
         model = OrderProduct
         fields = "__all__"
 
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели история для
+    статуса заказа.
+    """
     class Meta:
         model = OrderStatusHistory
         fields = "__all__"
 
 
 class OrderEmployeeHistorySerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели история для сотрудников,
+    которые работали с заказом.
+    """
     task_status = serializers.SerializerMethodField()
 
     class Meta:

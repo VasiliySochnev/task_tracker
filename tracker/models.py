@@ -166,7 +166,7 @@ class Order(models.Model):
     )
 
     def change_status(self, new_status, completed=False):
-        """Меняет статус заказа и записывает его в историю."""
+        """Метод, который меняет статус заказа и записывает его в историю."""
         self.status = new_status
         self.current_step = new_status
         self.save()
@@ -260,6 +260,7 @@ class OrderEmployeeHistory(models.Model):
 
     @property
     def task_status(self):
+        """Метод для статуса задачи."""
         if self.task and self.task.is_completed:
             return "завершена"
         elif self.task and self.task.is_active:
@@ -276,7 +277,7 @@ class OrderEmployeeHistory(models.Model):
 
 
 class Task(models.Model):
-    """Модель задачи для отслеживания статуса выполнения."""
+    """Модель задачи."""
 
     task_id = models.AutoField(primary_key=True)
     order = models.ForeignKey(

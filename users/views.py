@@ -12,7 +12,7 @@ from .serializers import (BusyEmployeeSerializer, ClientSerializer,
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """Сэт - контроллер для модели пользователя."""
+    """CRUD-интерфейс для модели пользователя."""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -24,7 +24,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):
-    """Сэт - контроллер для модели сотрудника."""
+    """CRUD-интерфейс для модели сотрудника."""
 
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
@@ -32,7 +32,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 
 
 class BusyEmployeesView(APIView):
-    """Контроллер для отображения сотрудников, выполняющих задачи."""
+    """API для отображения сотрудников, выполняющих задачи."""
 
     permission_classes = [IsAdminUser]
 
@@ -49,7 +49,7 @@ class BusyEmployeesView(APIView):
 
 
 class ClientViewSet(viewsets.ModelViewSet):
-    """Сэт - контроллер для модели клиента."""
+    """CRUD-интерфейс для модели клиента."""
 
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
@@ -57,7 +57,7 @@ class ClientViewSet(viewsets.ModelViewSet):
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
-    """Сэт - контроллер для модели отдела."""
+    """CRUD-интерфейс для модели отдела."""
 
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer

@@ -7,6 +7,10 @@ from users.models import Employee
 
 @shared_task
 def create_order_task_chain(order_id):
+    """
+    Назначает задачу после сохранения
+    заказа менеджером по продажам.
+    """
     print(f"[CELERY] Starting chain for order {order_id}")
     order = Order.objects.get(pk=order_id)
 

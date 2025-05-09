@@ -3,7 +3,6 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status, viewsets
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -177,7 +176,7 @@ class AddressViewSet(viewsets.ModelViewSet):
 
 class OrderStatusHistoryViewSet(viewsets.ModelViewSet):
     """
-    Интерфейс для просмотра и управления историей изменения статусов заказа.
+    CRUD-интерфейс для просмотра и управления историей изменения статусов заказа.
     """
 
     queryset = OrderStatusHistory.objects.all()
@@ -187,7 +186,7 @@ class OrderStatusHistoryViewSet(viewsets.ModelViewSet):
 
 class OrderEmployeeHistoryViewSet(viewsets.ModelViewSet):
     """
-    Интерфейс для работы с историей назначения сотрудников на заказы.
+    CRUD-интерфейс для работы с историей назначения сотрудников на заказы.
     Только для просмотра задач сотрудниками.
     """
 
