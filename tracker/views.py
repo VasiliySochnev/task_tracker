@@ -103,7 +103,7 @@ class ImportantTasksView(APIView):
             )
 
         # Формируем список оставшихся статусов
-        remaining_statuses = OrderStatus.choices[current_index : len(all_statuses) - 1]
+        remaining_statuses = OrderStatus.choices[current_index: len(all_statuses) - 1]
         formatted = [{"key": key, "label": label} for key, label in remaining_statuses]
 
         return Response(formatted)

@@ -158,7 +158,6 @@ class Client(User):
             return f"{self.organization_name} | {base_info}"
         return f"{self.first_name} {self.last_name} | {base_info}"
 
-
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"

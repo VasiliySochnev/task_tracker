@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
+
 class DepartmentShippingValidator:
     """Валидация для отделов и зон отгрузки."""
     def __init__(self, department_field, shipping_zone_field):
         self.department_field = department_field
         self.shipping_zone_field = shipping_zone_field
-
 
     def __call__(self, value):
         department_field = value.get(self.department_field)

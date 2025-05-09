@@ -17,7 +17,6 @@ class ProductСlientValidator:
             )
 
 
-
 class DepartmentProductValidator:
     """Валидация от отсутствия отдела для товара."""
     def __init__(self, department_field):
