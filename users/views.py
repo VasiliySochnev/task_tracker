@@ -3,7 +3,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from .paginators import ClientPaginator, EmployeePaginator, UserPaginator
 from .models import Client, Department, Employee, User
 from .permissions import IsDepartmentOfPersonnel, IsSalesManager
 from .serializers import (BusyEmployeeSerializer, ClientSerializer,
@@ -15,6 +15,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """CRUD-интерфейс для модели пользователя."""
 
     queryset = User.objects.all()
+    pagination_class = UserPaginator
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
     lookup_field = "email"
@@ -27,6 +28,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     """CRUD-интерфейс для модели сотрудника."""
 
     queryset = Employee.objects.all()
+    pagination_class = EmployeePaginator
     serializer_class = EmployeeSerializer
     permission_classes = [IsDepartmentOfPersonnel]
 
@@ -52,6 +54,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     """CRUD-интерфейс для модели клиента."""
 
     queryset = Client.objects.all()
+    pagination_class = ClientPaginator
     serializer_class = ClientSerializer
     permission_classes = [IsSalesManager]
 

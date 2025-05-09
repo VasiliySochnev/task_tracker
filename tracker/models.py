@@ -181,6 +181,9 @@ class Order(models.Model):
         assign_task_to_employee(self, new_status)
 
     def calculate_total(self, save=False):
+        """
+        Метод для подсчета общей суммы заказа.
+        """
         total = sum(
             item.product.price * item.quantity for item in self.orderproduct_set.all()
         )
@@ -260,7 +263,7 @@ class OrderEmployeeHistory(models.Model):
 
     @property
     def task_status(self):
-        """Метод для статуса задачи."""
+        """Метод для статуса задач сотрудников."""
         if self.task and self.task.is_completed:
             return "завершена"
         elif self.task and self.task.is_active:

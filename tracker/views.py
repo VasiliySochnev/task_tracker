@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from .paginators import ProductPaginator, OrderPaginator, TaskPaginator
 from users.models import Employee
 from users.permissions import (IsChangeStatusOrder, IsCladdingQuality,
                                IsClient, IsSalesManager, IsViewTaskOfEmployee)
@@ -138,6 +138,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Task.objects.all()
+    pagination_class = TaskPaginator
     serializer_class = TaskSerializer
 
 
@@ -148,6 +149,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Product.objects.all()
+    pagination_class = ProductPaginator
     serializer_class = ProductSerializer
     permission_classes = [IsCladdingQuality, IsSalesManager]
 
@@ -159,6 +161,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Order.objects.all()
+    pagination_class = OrderPaginator
     serializer_class = OrderSerializer
     permission_classes = [IsSalesManager, IsClient, IsChangeStatusOrder]
 

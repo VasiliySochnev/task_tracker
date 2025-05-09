@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import (Address, Order, OrderEmployeeHistory, OrderProduct,
                      OrderStatusHistory, Product, Task)
+from .validators import ProductСlientValidator, DepartmentProductValidator
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -11,6 +12,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = "__all__"
+        validators = DepartmentProductValidator(department_field="department")
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -65,6 +67,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = "__all__"
+        validators = ProductСlientValidator(products_field="products", client_field="client")
 
 
 class AddressSerializer(serializers.ModelSerializer):
