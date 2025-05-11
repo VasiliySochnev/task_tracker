@@ -3,8 +3,9 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .paginators import ClientPaginator, EmployeePaginator, UserPaginator
+
 from .models import Client, Department, Employee, User
+from .paginators import ClientPaginator, EmployeePaginator, UserPaginator
 from .permissions import IsDepartmentOfPersonnel, IsSalesManager
 from .serializers import (BusyEmployeeSerializer, ClientSerializer,
                           DepartmentSerializer, EmployeeSerializer,

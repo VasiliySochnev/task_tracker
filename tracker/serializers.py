@@ -2,13 +2,14 @@ from rest_framework import serializers
 
 from .models import (Address, Order, OrderEmployeeHistory, OrderProduct,
                      OrderStatusHistory, Product, Task)
-from .validators import ProductСlientValidator, DepartmentProductValidator
+from .validators import DepartmentProductValidator, ProductСlientValidator
 
 
 class ProductSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели товара.
     """
+
     class Meta:
         model = Product
         fields = "__all__"
@@ -19,6 +20,7 @@ class TaskSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели задача.
     """
+
     class Meta:
         model = Task
         fields = "__all__"
@@ -28,6 +30,7 @@ class TaskSummarySerializer(serializers.ModelSerializer):
     """
     Сериализатор для получения активных задач по конкретному заказу.
     """
+
     order = serializers.StringRelatedField()
     task_status = serializers.CharField(source="status")
     task_created_at = serializers.DateTimeField(source="created_at")
@@ -60,20 +63,11 @@ class TaskSummarySerializer(serializers.ModelSerializer):
         return getattr(obj.employee.shipping_zone, "name", None)
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели заказа.
-    """
-    class Meta:
-        model = Order
-        fields = "__all__"
-        validators = [ProductСlientValidator(products_field="products", client_field="client")]
-
-
 class AddressSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели адреса.
     """
+
     class Meta:
         model = Address
         fields = "__all__"
@@ -84,9 +78,50 @@ class OrderProductSerializer(serializers.ModelSerializer):
     Сериализатор для промежуточной модели
     товара и заказа.
     """
+
     class Meta:
         model = OrderProduct
+        fields = ("product", "quantity")
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели заказа.
+    """
+
+    products = OrderProductSerializer(many=True, write_only=True)
+    products_read = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Order
         fields = "__all__"
+        extra_fields = ["products_read"]
+        validators = [
+            ProductСlientValidator(products_field="products", client_field="client")
+        ]
+
+    def get_products_read(self, obj):
+        return OrderProductSerializer(obj.order_products.all(), many=True).data
+
+    def create(self, validated_data):
+        products_data = validated_data.pop("products")
+        order = Order.objects.create(**validated_data)
+        for item in products_data:
+            OrderProduct.objects.create(order=order, **item)
+        return order
+
+    def update(self, instance, validated_data):
+        products_data = validated_data.pop("products", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if products_data:
+            instance.products.all().delete()
+            for item in products_data:
+                OrderProduct.objects.create(order=instance, **item)
+
+        return instance
 
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
@@ -94,6 +129,7 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
     Сериализатор для модели история для
     статуса заказа.
     """
+
     class Meta:
         model = OrderStatusHistory
         fields = "__all__"
@@ -104,6 +140,7 @@ class OrderEmployeeHistorySerializer(serializers.ModelSerializer):
     Сериализатор для модели история для сотрудников,
     которые работали с заказом.
     """
+
     task_status = serializers.SerializerMethodField()
 
     class Meta:

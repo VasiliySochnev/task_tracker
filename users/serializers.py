@@ -1,15 +1,16 @@
+from django.contrib.auth.models import Group
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
-from django.contrib.auth.models import Group
+
 from users.models import Client, Department, Employee, User
-from users.validators import B2BValidator, DepartmentShippingValidator
+from users.validators import B2BValidator
+
 
 class UserSerializer(ModelSerializer):
     """Сериализатор для модели пользователя."""
+
     groups = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Group.objects.all(),
-        required=False
+        many=True, queryset=Group.objects.all(), required=False
     )
 
     class Meta:
@@ -117,12 +118,15 @@ class ClientSerializer(ModelSerializer):
     class Meta:
         model = Client
         fields = "__all__"
-        validators = [B2BValidator(client_type_field="client_type",
-                                  organization_name_field="organization_name",
-                                  o_g_r_n_field="o_g_r_n",
-                                  i_n_n_field="i_n_n",
-                                  bank_account_field="bank_account"
-                                  )]
+        validators = [
+            B2BValidator(
+                client_type_field="client_type",
+                organization_name_field="organization_name",
+                o_g_r_n_field="o_g_r_n",
+                i_n_n_field="i_n_n",
+                bank_account_field="bank_account",
+            )
+        ]
 
     def create(self, validated_data):
         password = validated_data.pop("password", None)

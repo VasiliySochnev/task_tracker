@@ -5,13 +5,14 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .paginators import ProductPaginator, OrderPaginator, TaskPaginator
+
 from users.models import Employee
-from users.permissions import (IsChangeStatusOrder, IsCladdingQuality,
+from users.permissions import (IsChangeStatusOrder,
                                IsClient, IsSalesManager, IsViewTaskOfEmployee)
 
 from .models import (Address, Order, OrderEmployeeHistory, OrderStatus,
                      OrderStatusHistory, Product, Task)
+from .paginators import OrderPaginator, ProductPaginator, TaskPaginator
 from .serializers import (AddressSerializer, OrderEmployeeHistorySerializer,
                           OrderSerializer, OrderStatusHistorySerializer,
                           ProductSerializer, TaskSerializer,
@@ -151,7 +152,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     pagination_class = ProductPaginator
     serializer_class = ProductSerializer
-    permission_classes = [IsCladdingQuality, IsSalesManager]
+    # permission_classes = [IsCladdingQuality | IsSalesManager]
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -163,7 +164,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     pagination_class = OrderPaginator
     serializer_class = OrderSerializer
-    permission_classes = [IsSalesManager, IsClient, IsChangeStatusOrder]
+    # permission_classes = [IsSalesManager | IsChangeStatusOrder]
 
 
 class AddressViewSet(viewsets.ModelViewSet):
@@ -174,7 +175,7 @@ class AddressViewSet(viewsets.ModelViewSet):
 
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
-    permission_classes = [IsSalesManager, IsClient]
+    # permission_classes = [IsSalesManager | IsClient]
 
 
 class OrderStatusHistoryViewSet(viewsets.ModelViewSet):

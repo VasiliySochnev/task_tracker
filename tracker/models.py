@@ -198,7 +198,12 @@ class Order(models.Model):
 class OrderProduct(models.Model):
     """Промежуточная модель для хранения количества каждого товара в заказе."""
 
-    order = models.ForeignKey("Order", on_delete=models.CASCADE, verbose_name="Заказ")
+    order = models.ForeignKey(
+        "Order",
+        on_delete=models.CASCADE,
+        related_name="order_products",
+        verbose_name="Заказ",
+    )
     product = models.ForeignKey(
         "Product", on_delete=models.CASCADE, verbose_name="Товар"
     )

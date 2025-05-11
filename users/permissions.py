@@ -14,7 +14,10 @@ class IsCladdingQuality(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return isinstance(request.user, Employee) and request.user.position in self.allowed_positions
+        return (
+            isinstance(request.user, Employee)
+            and request.user.position in self.allowed_positions
+        )
 
 
 class IsSalesManager(BasePermission):
@@ -28,7 +31,10 @@ class IsSalesManager(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return isinstance(request.user, Employee) and request.user.position in self.allowed_positions
+        return (
+            isinstance(request.user, Employee)
+            and request.user.position in self.allowed_positions
+        )
 
 
 class IsDepartmentOfPersonnel(BasePermission):
@@ -42,7 +48,10 @@ class IsDepartmentOfPersonnel(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return isinstance(request.user, Employee) and request.user.position in self.allowed_positions
+        return (
+            isinstance(request.user, Employee)
+            and request.user.position in self.allowed_positions
+        )
 
 
 class IsChangeStatusOrder(BasePermission):
@@ -64,7 +73,10 @@ class IsChangeStatusOrder(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return isinstance(request.user, Employee) and request.user.position in self.allowed_positions
+        return (
+            isinstance(request.user, Employee)
+            and request.user.position in self.allowed_positions
+        )
 
 
 class IsViewTaskOfEmployee(BasePermission):
@@ -82,7 +94,10 @@ class IsViewTaskOfEmployee(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return isinstance(request.user, Employee) and request.user.position in self.allowed_positions
+        return (
+            isinstance(request.user, Employee)
+            and request.user.position in self.allowed_positions
+        )
 
 
 class IsClient(BasePermission):
