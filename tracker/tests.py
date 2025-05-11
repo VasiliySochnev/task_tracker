@@ -1,5 +1,5 @@
 from django.test import TestCase
-
+from django.conf import settings
 from tracker.models import Address, Order, OrderProduct, Product, ShippingZone
 from users.models import Client, Department, Employee
 
@@ -77,6 +77,14 @@ class OrderWorkflowTest(TestCase):
             email="cd@test.com", position="курьер", shipping_zone=self.district_zone
         )
 
+        # Создаем подходящего сотрудника, который будет удовлетворять всем критериям
+        self.processing_warehouse_manager_instrument = Employee.objects.create(
+            email="manager_instrument@test.com",
+            position="менеджер склада",
+            department=self.dept1,  # Отдел инструмент
+            status="processing"  # Статус "processing"
+        )
+
         # Создаем товары
         self.product1 = Product.objects.create(
             title="Молоток",
@@ -90,7 +98,6 @@ class OrderWorkflowTest(TestCase):
             department=self.dept2,
             supplier=self.sales_manager,
         )
-
     def test_create_order_and_assign_tasks(self):
         # Создаем заказ
         order = Order.objects.create(
@@ -114,6 +121,15 @@ class OrderWorkflowTest(TestCase):
         # Проверяем, что задачи назначены
         assigned_tasks = order.tasks.all()
         self.assertGreater(len(assigned_tasks), 0)
+
+        # Проверяем, что хотя бы одна задача назначена на подходящего сотрудника
+        task_assigned_to_manager = any(
+            task.employee == self.processing_warehouse_manager_instrument for task in assigned_tasks
+        )
+        self.assertTrue(task_assigned_to_manager, "Задача не была назначена подходящему сотруднику")
+
+        # Печать назначенных задач для отладки
         print("\nНазначенные задачи:")
         for task in assigned_tasks:
             print(f"{task.status} -> {task.employee.position} ({task.employee})")
+

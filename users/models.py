@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
+from .managers import UserManager
 
 class User(AbstractUser):
     """Модель пользователя."""
@@ -32,6 +32,7 @@ class User(AbstractUser):
     is_active = models.BooleanField(
         default=True, verbose_name="Активность", blank=True, null=True
     )
+    objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -153,7 +154,8 @@ class Client(User):
     )
 
     def __str__(self):
-        base_info = f"{self.address}, {self.phone}"
+        addresses = ", ".join(str(addr) for addr in self.address.all())
+        base_info = f"{addresses}, {self.phone}"
         if self.client_type == "B2B":
             return f"{self.organization_name} | {base_info}"
         return f"{self.first_name} {self.last_name} | {base_info}"
