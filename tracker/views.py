@@ -7,16 +7,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.models import Employee
-from users.permissions import (IsChangeStatusOrder,
-                               IsClient, IsSalesManager, IsViewTaskOfEmployee)
+from users.permissions import (IsChangeStatusOrder, IsClient, IsSalesManager,
+                               IsViewTaskOfEmployee)
 
 from .models import (Address, Order, OrderEmployeeHistory, OrderStatus,
-                     OrderStatusHistory, Product, Task)
+                     OrderStatusHistory, Product, ShippingZone, Task)
 from .paginators import OrderPaginator, ProductPaginator, TaskPaginator
 from .serializers import (AddressSerializer, OrderEmployeeHistorySerializer,
                           OrderSerializer, OrderStatusHistorySerializer,
-                          ProductSerializer, TaskSerializer,
-                          TaskSummarySerializer)
+                          ProductSerializer, ShippingZoneSerializer,
+                          TaskSerializer, TaskSummarySerializer)
 from .utils import complete_and_create_next
 
 
@@ -176,6 +176,15 @@ class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
     # permission_classes = [IsSalesManager | IsClient]
+
+
+class ShippingZoneViewSet(viewsets.ModelViewSet):
+    """
+    CRUD-интерфейс для зон отгрузки.
+    """
+
+    queryset = ShippingZone.objects.all()
+    serializer_class = ShippingZoneSerializer
 
 
 class OrderStatusHistoryViewSet(viewsets.ModelViewSet):

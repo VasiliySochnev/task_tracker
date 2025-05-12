@@ -5,8 +5,9 @@ from tracker.apps import TrackerConfig
 from tracker.views import (AddressViewSet, ImportantTasksView,
                            LeastBusyEmployeesView, OrderEmployeeHistoryViewSet,
                            OrderStatusHistoryViewSet, OrderViewSet,
-                           ProductViewSet, TaskSummaryView, TaskViewSet,
-                           get_product_price, order_detail)
+                           ProductViewSet, ShippingZoneViewSet,
+                           TaskSummaryView, TaskViewSet, get_product_price,
+                           order_detail)
 
 app_name = TrackerConfig.name
 
@@ -26,6 +27,8 @@ router.register(
     OrderEmployeeHistoryViewSet,
     basename="orders_employees_stories",
 )
+router.register(r"shipping_zones", ShippingZoneViewSet, basename="shipping_zones")
+
 
 urlpatterns = [
     path("admin/get-product-price/", get_product_price, name="get_product_price"),

@@ -1,8 +1,18 @@
 from rest_framework import serializers
 
 from .models import (Address, Order, OrderEmployeeHistory, OrderProduct,
-                     OrderStatusHistory, Product, Task)
+                     OrderStatusHistory, Product, ShippingZone, Task)
 from .validators import DepartmentProductValidator, ProductСlientValidator
+
+
+class ShippingZoneSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели зона отгрузки.
+    """
+
+    class Meta:
+        model = ShippingZone
+        fields = "__all__"
 
 
 class ProductSerializer(serializers.ModelSerializer):

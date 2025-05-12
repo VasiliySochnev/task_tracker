@@ -5,14 +5,15 @@ services:
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     depends_on:
       - db
       - redis
     env_file:
       - ./.env
-
+    networks:
+      - net
   celery:
     build: .
     command: celery -A config worker --loglevel=info --pool=solo
@@ -24,6 +25,8 @@ services:
       - db
     env_file:
       - ./.env
+    networks:
+      - net
 
 
   db:
@@ -34,6 +37,8 @@ services:
       POSTGRES_PASSWORD: 1234
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - net
 
   redis:
     image: redis
@@ -41,8 +46,14 @@ services:
       - redis_volume:/data
     env_file:
       - ./.env
+    networks:
+      - net
 
 volumes:
   postgres_data:
   static_volume:
   redis_volume:
+
+networks:
+  net:
+

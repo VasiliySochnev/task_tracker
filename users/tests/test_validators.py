@@ -41,7 +41,7 @@ class DepartmentShippingValidatorTest(TestCase):
 
     def test_valid_exempt_position(self):
         """
-        Должно пройти: должность, не требующая department/shipping_zone.
+        Тест для должности, не требующая department/shipping_zone.
         """
         data = {
             "position": "менеджер по продажам",
@@ -67,7 +67,7 @@ class B2BValidatorTest(TestCase):
 
     def test_valid_b2b_full(self):
         """
-        Должно пройти: все поля для B2B клиента заполнены.
+        Тест, где все поля для B2B клиента заполнены.
         """
         self.validator(
             {
