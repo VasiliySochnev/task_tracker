@@ -33,7 +33,7 @@ router.register(r"shipping_zones", ShippingZoneViewSet, basename="shipping_zones
 urlpatterns = [
     path("admin/get-product-price/", get_product_price, name="get_product_price"),
     path("order_detail/<int:order_id>/", order_detail, name="order_detail"),
-    path("tasks/important/", ImportantTasksView.as_view(), name="important_tasks"),
+    path("tasks/important/<int:order_id>/", ImportantTasksView.as_view(), name="important_tasks"),
     path(
         "tasks/summary/<int:order_id>/", TaskSummaryView.as_view(), name="task-summary"
     ),

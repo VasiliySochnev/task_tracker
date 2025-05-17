@@ -76,9 +76,7 @@ class ImportantTasksView(APIView):
     Возвращает список статусов, начиная с текущего и до предпоследнего.
     """
 
-    def get(self, request):
-        order_id = request.query_params.get("order_id")
-
+    def get(self, request, order_id):
         if not order_id:
             return Response(
                 {"detail": "order_id is required."}, status=status.HTTP_400_BAD_REQUEST

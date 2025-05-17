@@ -1,13 +1,16 @@
 from rest_framework import serializers
 
-from .models import (Address, Order, OrderEmployeeHistory, OrderProduct,
-                     OrderStatusHistory, Product, ShippingZone, Task)
+from .models import (
+    Address, Order, OrderEmployeeHistory, OrderProduct,
+    OrderStatusHistory, Product, ShippingZone, Task
+)
 from .validators import DepartmentProductValidator, ProductСlientValidator
 
 
 class ShippingZoneSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели зона отгрузки.
+    Сериализатор для модели ShippingZone (зона отгрузки).
+    Используется для преобразования данных зоны отгрузки в JSON и обратно.
     """
 
     class Meta:
@@ -17,7 +20,8 @@ class ShippingZoneSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели товара.
+    Сериализатор для модели Product (товар).
+    Валидирует соответствие товара отделу через кастомный валидатор.
     """
 
     class Meta:
@@ -28,7 +32,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели задача.
+    Сериализатор для модели Task (задача).
+    Используется для сериализации всех полей задачи.
     """
 
     class Meta:
@@ -38,7 +43,9 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class TaskSummarySerializer(serializers.ModelSerializer):
     """
-    Сериализатор для получения активных задач по конкретному заказу.
+    Сериализатор для краткого отображения активных задач по заказу.
+    Позволяет получить расширенную информацию о задаче,
+    включая имя сотрудника, отдел, должность и зону отгрузки.
     """
 
     order = serializers.StringRelatedField()
@@ -64,18 +71,27 @@ class TaskSummarySerializer(serializers.ModelSerializer):
         ]
 
     def get_employee_full_name(self, obj):
+        """
+        Возвращает полное имя сотрудника.
+        """
         return f"{obj.employee.first_name} {obj.employee.last_name}"
 
     def get_department(self, obj):
+        """
+        Возвращает название отдела сотрудника, если есть.
+        """
         return getattr(obj.employee.department, "title", None)
 
     def get_shipping_zone(self, obj):
+        """
+        Возвращает название зоны отгрузки сотрудника, если есть.
+        """
         return getattr(obj.employee.shipping_zone, "name", None)
 
 
 class AddressSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели адреса.
+    Сериализатор для модели Address (адрес).
     """
 
     class Meta:
@@ -85,8 +101,8 @@ class AddressSerializer(serializers.ModelSerializer):
 
 class OrderProductSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для промежуточной модели
-    товара и заказа.
+    Сериализатор для промежуточной модели OrderProduct (товар в заказе).
+    Используется для отображения и обработки количества и товара.
     """
 
     class Meta:
@@ -96,7 +112,9 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели заказа.
+    Сериализатор для модели Order (заказ).
+    Обрабатывает вложенные продукты и включает дополнительное поле products_read
+    для отображения продуктов в заказе (read-only).
     """
 
     products = OrderProductSerializer(many=True, write_only=True)
@@ -111,9 +129,15 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
 
     def get_products_read(self, obj):
+        """
+        Возвращает сериализованные данные о продуктах в заказе.
+        """
         return OrderProductSerializer(obj.order_products.all(), many=True).data
 
     def create(self, validated_data):
+        """
+        Переопределяет метод создания заказа с вложенными товарами.
+        """
         products_data = validated_data.pop("products")
         order = Order.objects.create(**validated_data)
         for item in products_data:
@@ -121,11 +145,17 @@ class OrderSerializer(serializers.ModelSerializer):
         return order
 
     def update(self, instance, validated_data):
+        """
+        Переопределяет метод обновления заказа и связанных товаров.
+        """
         products_data = validated_data.pop("products", None)
+
+        # Обновляем основные поля заказа
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
+        # Обновляем товары, если они переданы
         if products_data:
             instance.products.all().delete()
             for item in products_data:
@@ -136,8 +166,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели история для
-    статуса заказа.
+    Сериализатор для модели OrderStatusHistory (история смены статуса заказа).
     """
 
     class Meta:
@@ -147,8 +176,8 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
 
 class OrderEmployeeHistorySerializer(serializers.ModelSerializer):
     """
-    Сериализатор для модели история для сотрудников,
-    которые работали с заказом.
+    Сериализатор для модели OrderEmployeeHistory (история участия сотрудника в заказе).
+    Добавляет поле task_status, возвращающее статус связанной задачи.
     """
 
     task_status = serializers.SerializerMethodField()
@@ -166,4 +195,7 @@ class OrderEmployeeHistorySerializer(serializers.ModelSerializer):
         read_only_fields = ["task_status"]
 
     def get_task_status(self, obj):
+        """
+        Получает статус задачи, связанной с историей.
+        """
         return obj.task_status

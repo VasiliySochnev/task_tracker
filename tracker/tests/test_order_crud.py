@@ -7,13 +7,22 @@ from users.models import Client, Department, User
 
 
 class OrderCRUDTest(APITestCase):
+    """
+    Набор тестов для проверки операций CRUD над заказами (Order) через API.
+    """
+
     def setUp(self):
-        # Создаем пользователя-клиента
+        """
+        Подготовка данных для тестов:
+        - Создаёт клиента, адрес, зону доставки, департамент, поставщика и продукт.
+        - Создаёт заказ напрямую через модель и связывает продукт с заказом.
+        """
+        # Создание пользователя-клиента
         self.client_user = Client.objects.create_user(
             email="client@example.com", password="pass123"
         )
 
-        # Создаем адрес
+        # Создание адреса доставки
         self.address = Address.objects.create(
             floor=3,
             apartment=45,
@@ -24,18 +33,18 @@ class OrderCRUDTest(APITestCase):
             postal_code=101000,
         )
 
-        # Создаем зону доставки
+        # Создание зоны доставки
         self.shipping_zone = ShippingZone.objects.create(
             name="city", description="Доставка по городу"
         )
 
-        # Создаем департамент и поставщика
+        # Создание департамента и поставщика
         self.department = Department.objects.create(title="Электроника")
         self.supplier = User.objects.create_user(
             email="supplier@example.com", password="sup123"
         )
 
-        # Создаем продукт
+        # Создание товара
         self.product = Product.objects.create(
             title="Кабель HDMI",
             price="499.99",
@@ -46,91 +55,73 @@ class OrderCRUDTest(APITestCase):
             supplier=self.supplier,
         )
 
-        # Данные для теста заказа
+        # Данные для создания заказа через API
         self.order_data = {
             "client": self.client_user.id,
             "address": self.address.id,
-            "total_amount": str(
-                self.product.price
-            ),  # Цена в строковом формате для JSON
+            "total_amount": str(self.product.price),  # Цена как строка (для JSON)
             "status": "processing",
             "shipping_zone": self.shipping_zone.id,
             "products": [
                 {
                     "product": self.product.pk,
-                    "quantity": 1,  # Количество товара в заказе
+                    "quantity": 1,  # Количество единиц товара в заказе
                 }
             ],
         }
 
-        # Создаем заказ напрямую через модель (используем реальные объекты)
+        # Создание заказа напрямую через ORM
         self.order = Order.objects.create(
             client=self.client_user,
             address=self.address,
             shipping_zone=self.shipping_zone,
             total_amount=self.product.price,
         )
+
+        # Привязка продукта к заказу
         OrderProduct.objects.create(order=self.order, product=self.product, quantity=1)
 
     def test_create_order(self):
+        """
+        Тестирование создания заказа через POST-запрос.
+        Проверяется увеличение количества заказов и наличие продукта в заказе.
+        """
         orders_before = Order.objects.count()
+
         response = self.client.post(
             reverse("tracker:orders-list"), data=self.order_data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+        # Проверка, что заказ добавлен
         self.assertEqual(Order.objects.count(), orders_before + 1)
 
+        # Проверка, что продукт прикреплён к заказу
         new_order = Order.objects.latest("order_id")
         self.assertEqual(OrderProduct.objects.filter(order=new_order).count(), 1)
 
     def test_read_order(self):
+        """
+        Тестирование получения заказа через GET-запрос.
+        Проверяется корректность возвращаемых данных.
+        """
         response = self.client.get(
             reverse("tracker:orders-detail", args=[self.order.pk])
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        print("RESPONSE:", response.data)
 
+        # Проверка, что заказ принадлежит нужному клиенту
         self.assertEqual(response.data["client"], self.client_user.pk)
 
-    # def test_update_order(self):
-    #     # Изменим адрес
-    #     new_address = Address.objects.create(
-    #         floor=2,
-    #         apartment=10,
-    #         house=8,
-    #         street="Советская",
-    #         city="СПБ",
-    #         region="ЛО",
-    #         postal_code=190000
-    #     )
-    #
-    #     updated_data = {
-    #         "client": self.client_user.pk,
-    #         "address": new_address.id,
-    #         "shipping_zone": self.shipping_zone.id,
-    #         "status": "processing",
-    #         "total_amount": str(self.product.price),  # Цена в строковом формате для JSON
-    #         "products": [
-    #             {
-    #                 "product": self.product.pk,
-    #                 "quantity": 1  # Количество товара в заказе
-    #             }
-    #         ]
-    #     }
-    #
-    #     related_order_products = OrderProduct.objects.filter(product_id=4)
-    #     related_order_products.update(product=self.product.pk)  # Обновляем продукт в связанных записях
-    #
-    #     response = self.client.put(reverse("tracker:orders-detail", args=[self.order.pk]), data=updated_data, format="json")
-    #     print("RESPONSE:", response.data)
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(response.data["address"], new_address.id)
-
     def test_delete_order(self):
+        """
+        Тестирование удаления заказа через DELETE-запрос.
+        Проверяется, что заказ действительно удалён.
+        """
         response = self.client.delete(
             reverse("tracker:orders-detail", args=[self.order.pk])
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Убедимся, что заказ удалён из базы
         self.assertFalse(Order.objects.filter(pk=self.order.pk).exists())
