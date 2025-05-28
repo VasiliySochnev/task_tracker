@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
 from django.db import models
+
+from .managers import UserManager
 
 
 class User(AbstractUser):
@@ -25,7 +26,7 @@ class User(AbstractUser):
         upload_to="photo/avatars/", verbose_name="Аватар", blank=True, null=True
     )
     tg_chat_id = models.CharField(
-        max_length=100, verbose_name="Чат ID телеграма", blank=True, null=True
+        max_length=100, verbose_name="Чат ID телеграмма", blank=True, null=True
     )
     is_staff = models.BooleanField(
         default=False, verbose_name="Администратор", blank=True, null=True
@@ -33,6 +34,7 @@ class User(AbstractUser):
     is_active = models.BooleanField(
         default=True, verbose_name="Активность", blank=True, null=True
     )
+    objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -113,7 +115,7 @@ class Employee(User):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Зона отгрузки (для логистов, курьеров и приемщиков)"
+        verbose_name="Зона отгрузки (для логистов, курьеров и приемщиков)",
     )
 
     def __str__(self):
@@ -154,30 +156,11 @@ class Client(User):
     )
 
     def __str__(self):
-        base_info = f"{self.address}, {self.phone}"
+        addresses = ", ".join(str(addr) for addr in self.address.all())
+        base_info = f"{addresses}, {self.phone}"
         if self.client_type == "B2B":
             return f"{self.organization_name} | {base_info}"
         return f"{self.first_name} {self.last_name} | {base_info}"
-
-    def clean(self):
-        # Валидация для проверки, что поля B2B заполнены только для B2B клиентов
-        if self.client_type == "B2B":
-            if not all(
-                [self.organization_name, self.o_g_r_n, self.i_n_n, self.bank_account]
-            ):
-                raise ValidationError(
-                    "Все поля для B2B клиентов должны быть заполнены."
-                )
-        else:
-            if (
-                self.organization_name
-                or self.o_g_r_n
-                or self.i_n_n
-                or self.bank_account
-            ):
-                raise ValidationError(
-                    "Поля организации не должны быть заполнены для B2C клиентов."
-                )
 
     class Meta:
         verbose_name = "Клиент"

@@ -1,0 +1,26 @@
+[
+  {
+    "model": "tracker.shippingzone",
+    "pk": 1,
+    "fields": {
+      "name": "city",
+      "description": "Зона отгрузки внутри города"
+    }
+  },
+  {
+    "model": "tracker.shippingzone",
+    "pk": 2,
+    "fields": {
+      "name": "district",
+      "description": "Зона отгрузки в пределах района"
+    }
+  },
+  {
+    "model": "tracker.shippingzone",
+    "pk": 3,
+    "fields": {
+      "name": "region",
+      "description": "Зона отгрузки по области"
+    }
+  }
+]

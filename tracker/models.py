@@ -2,8 +2,6 @@ from django.db import models
 from django.utils import timezone
 
 
-
-
 class Address(models.Model):
     """Модель адреса."""
 
@@ -91,6 +89,20 @@ class OrderStatus(models.TextChoices):
     DELIVERY = "delivery", "Доставка заказа"
     DELIVERED = "delivered", "Заказ доставлен"
 
+    @classmethod
+    def from_position(cls, position: str) -> str:
+        """Преобразует роль сотрудника в соответствующий статус заказа."""
+        position = position.lower()
+        position_status_map = {
+            "менеджер склада": cls.PROCESSING,
+            "складской оператор": cls.ASSEMBLY,
+            "комплектовщик": cls.ITEM_PICKING,
+            "грузчик": cls.TO_SHIPPING_AREA,
+            "приемщик": cls.AT_SHIPPING_AREA,
+            "логист": cls.DOC_PREPARATION,
+            "курьер": cls.DELIVERY,
+        }
+        return position_status_map.get(position)
 
 
 class ShippingZone(models.Model):
@@ -103,10 +115,7 @@ class ShippingZone(models.Model):
     ]
 
     name = models.CharField(
-        max_length=20,
-        choices=ZONE_CHOICES,
-        unique=True,
-        verbose_name="Название зоны"
+        max_length=20, choices=ZONE_CHOICES, unique=True, verbose_name="Название зоны"
     )
     description = models.TextField(blank=True, null=True, verbose_name="Описание зоны")
 
@@ -116,7 +125,6 @@ class ShippingZone(models.Model):
     class Meta:
         verbose_name = "Зона отгрузки"
         verbose_name_plural = "Зоны отгрузки"
-
 
 
 class Order(models.Model):
@@ -150,12 +158,15 @@ class Order(models.Model):
         default=OrderStatus.PROCESSING,
         verbose_name="Статус заказа",
     )
-    shipping_zone = models.ForeignKey("ShippingZone", on_delete=models.SET_NULL, null=True, verbose_name="Зона отгрузки"
+    shipping_zone = models.ForeignKey(
+        "ShippingZone",
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Зона отгрузки",
     )
 
-
     def change_status(self, new_status, completed=False):
-        """Меняет статус заказа и записывает его в историю."""
+        """Метод, который меняет статус заказа и записывает его в историю."""
         self.status = new_status
         self.current_step = new_status
         self.save()
@@ -166,10 +177,13 @@ class Order(models.Model):
         )
         # Назначаем задачу сотрудникам для текущего этапа
         from tracker.services import assign_task_to_employee
+
         assign_task_to_employee(self, new_status)
 
-
     def calculate_total(self, save=False):
+        """
+        Метод для подсчета общей суммы заказа.
+        """
         total = sum(
             item.product.price * item.quantity for item in self.orderproduct_set.all()
         )
@@ -184,7 +198,12 @@ class Order(models.Model):
 class OrderProduct(models.Model):
     """Промежуточная модель для хранения количества каждого товара в заказе."""
 
-    order = models.ForeignKey("Order", on_delete=models.CASCADE, verbose_name="Заказ")
+    order = models.ForeignKey(
+        "Order",
+        on_delete=models.CASCADE,
+        related_name="order_products",
+        verbose_name="Заказ",
+    )
     product = models.ForeignKey(
         "Product", on_delete=models.CASCADE, verbose_name="Товар"
     )
@@ -241,19 +260,20 @@ class OrderEmployeeHistory(models.Model):
     task = models.ForeignKey(
         "Task",
         on_delete=models.CASCADE,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="employee_histories",
-        verbose_name="Задача"
+        verbose_name="Задача",
     )
 
     @property
     def task_status(self):
+        """Метод для статуса задач сотрудников."""
         if self.task and self.task.is_completed:
             return "завершена"
         elif self.task and self.task.is_active:
             return "назначена"
         return "не определено"
-
 
     def __str__(self):
         return f"Сотрудник {self.employee} для заказа {self.order.order_id} (назначен в {self.assigned_at})"
@@ -265,24 +285,54 @@ class OrderEmployeeHistory(models.Model):
 
 
 class Task(models.Model):
-    """Модель задачи для отслеживания статуса выполнения."""
-
+    """Модель задачи."""
 
     task_id = models.AutoField(primary_key=True)
-    order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name="tasks", verbose_name="Заказ")
-    shipping_zone = models.ForeignKey('ShippingZone', on_delete=models.PROTECT, null=True, blank=True, verbose_name="Зона отгрузки")
-    department = models.ForeignKey('users.Department', on_delete=models.PROTECT, null=True, blank=True, verbose_name="Отдел")
-    employee = models.ForeignKey('users.Employee', on_delete=models.CASCADE, related_name="tasks", verbose_name="Сотрудник")
-    description = models.TextField(blank=True, null=True, verbose_name="Описание задачи")
-    status = models.CharField(max_length=50, choices=OrderStatus.choices, verbose_name="Статус задачи")
-    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
+    order = models.ForeignKey(
+        "Order", on_delete=models.CASCADE, related_name="tasks", verbose_name="Заказ"
+    )
+    shipping_zone = models.ForeignKey(
+        "ShippingZone",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name="Зона отгрузки",
+    )
+    department = models.ForeignKey(
+        "users.Department",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name="Отдел",
+    )
+    employee = models.ForeignKey(
+        "users.Employee",
+        on_delete=models.CASCADE,
+        related_name="tasks",
+        verbose_name="Сотрудник",
+    )
+    description = models.TextField(
+        blank=True, null=True, verbose_name="Описание задачи"
+    )
+    status = models.CharField(
+        max_length=50, choices=OrderStatus.choices, verbose_name="Статус задачи"
+    )
+    created_at = models.DateTimeField(
+        default=timezone.now, verbose_name="Дата создания"
+    )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
-    due_date = models.DateTimeField(null=True, blank=True, verbose_name="Дата завершения")
+    due_date = models.DateTimeField(
+        null=True, blank=True, verbose_name="Дата завершения"
+    )
     is_completed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
-    depends_on = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
-                                   related_name='dependent_tasks')
-
+    depends_on = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="dependent_tasks",
+    )
 
     def __str__(self):
         return f" Заказ {self.order.order_id} - {self.status}"
@@ -290,4 +340,4 @@ class Task(models.Model):
     class Meta:
         verbose_name = "Задача"
         verbose_name_plural = "Задачи"
-        ordering = ['-status']
+        ordering = ["-status"]

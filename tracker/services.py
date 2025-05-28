@@ -1,8 +1,10 @@
-from tracker.models import Task, OrderEmployeeHistory
-from django.db.models import Count, Q
-from users.models import Employee, Department
-from django.utils import timezone
 import logging
+
+from django.db.models import Count, Q
+from django.utils import timezone
+
+from tracker.models import OrderEmployeeHistory, Task
+from users.models import Department, Employee
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,9 @@ STATUS_POSITION_MAPPING = {
 }
 
 
-def _create_task_and_history(order, status, employee, shipping_zone=None, department=None):
+def _create_task_and_history(
+    order, status, employee, shipping_zone=None, department=None
+):
     """
     Создаёт задачу и историю её назначения для конкретного сотрудника.
 
@@ -29,8 +33,12 @@ def _create_task_and_history(order, status, employee, shipping_zone=None, depart
     :param department: Отдел (если применяется).
     """
     # Проверка на дублирующие незавершённые задачи для того же сотрудника и статуса
-    if Task.objects.filter(order=order, status=status, employee=employee, is_completed=False).exists():
-        print(f"Задача уже назначена для сотрудника {employee.get_full_name()} на статус {status}")
+    if Task.objects.filter(
+        order=order, status=status, employee=employee, is_completed=False
+    ).exists():
+        print(
+            f"Задача уже назначена для сотрудника {employee.get_full_name()} на статус {status}"
+        )
         return
 
     # Создание задачи
@@ -40,7 +48,7 @@ def _create_task_and_history(order, status, employee, shipping_zone=None, depart
         shipment_zone=shipping_zone,
         employee=employee,
         status=status,
-        is_active=True
+        is_active=True,
     )
 
     # Создание записи в истории назначения
@@ -49,10 +57,12 @@ def _create_task_and_history(order, status, employee, shipping_zone=None, depart
         employee=task.employee,
         assigned_at=task.created_at,
         completed_at=timezone.now(),
-        task=task
+        task=task,
     )
 
-    print(f"Назначена задача: {employee.get_full_name()} ({status}) для заказа {order.pk}")
+    print(
+        f"Назначена задача: {employee.get_full_name()} ({status}) для заказа {order.pk}"
+    )
 
 
 def assign_task_to_employee(order, new_status, department=None, shipping_zone=None):
@@ -85,16 +95,16 @@ def assign_task_to_employee(order, new_status, department=None, shipping_zone=No
 
     # Иначе — фильтрация по отделам товаров, входящих в заказ
     else:
-        department_ids = order.products.values_list("department_id", flat=True).distinct()
+        department_ids = order.products.values_list(
+            "department_id", flat=True
+        ).distinct()
         employees = employees.filter(department__in=department_ids)
 
     # Исключение сотрудников с более чем 2 активными заказами (не для грузчиков/приемщиков)
     if position not in ["грузчик", "приемщик"]:
         employees = employees.annotate(
             active_orders=Count(
-                'tasks__order',
-                filter=Q(tasks__is_completed=False),
-                distinct=True
+                "tasks__order", filter=Q(tasks__is_completed=False), distinct=True
             )
         ).filter(active_orders__lt=3)
 
@@ -102,8 +112,10 @@ def assign_task_to_employee(order, new_status, department=None, shipping_zone=No
     if position == "грузчик":
         employees = employees.annotate(
             same_zone_tasks=Count(
-                'tasks',
-                filter=Q(tasks__shipping_zone=order.shipping_zone, tasks__is_completed=False)
+                "tasks",
+                filter=Q(
+                    tasks__shipping_zone=order.shipping_zone, tasks__is_completed=False
+                ),
             )
         ).order_by("same_zone_tasks")
 
@@ -117,15 +129,19 @@ def assign_task_to_employee(order, new_status, department=None, shipping_zone=No
                 employee=selected_employee,
                 status=new_status,
                 is_active=True,
-                department=None
+                department=None,
             )
             OrderEmployeeHistory.objects.create(
                 order=order,
                 employee=selected_employee,
             )
-            print(f"Назначена задача: {selected_employee.get_full_name()} для зоны {order.shipping_zone}")
+            print(
+                f"Назначена задача: {selected_employee.get_full_name()} для зоны {order.shipping_zone}"
+            )
         else:
-            print(f"Нет сотрудников для позиции {position} в зоне {order.shipping_zone}")
+            print(
+                f"Нет сотрудников для позиции {position} в зоне {order.shipping_zone}"
+            )
         return
 
     # Для остальных позиций — перебираем все отделы, задействованные в заказе
@@ -141,8 +157,8 @@ def assign_task_to_employee(order, new_status, department=None, shipping_zone=No
         if position == "комплектовщик":
             dept_employees = dept_employees.annotate(
                 dept_task_count=Count(
-                    'tasks',
-                    filter=Q(tasks__department=department, tasks__is_completed=False)
+                    "tasks",
+                    filter=Q(tasks__department=department, tasks__is_completed=False),
                 )
             ).filter(dept_task_count=0)
 
@@ -150,8 +166,8 @@ def assign_task_to_employee(order, new_status, department=None, shipping_zone=No
         elif position == "грузчик":
             dept_employees = dept_employees.annotate(
                 dept_task_count=Count(
-                    'tasks',
-                    filter=Q(tasks__department=department, tasks__is_completed=False)
+                    "tasks",
+                    filter=Q(tasks__department=department, tasks__is_completed=False),
                 )
             ).filter(dept_task_count=0)
 
@@ -165,12 +181,16 @@ def assign_task_to_employee(order, new_status, department=None, shipping_zone=No
                 employee=selected_employee,
                 status=new_status,
                 is_active=True,
-                department=department
+                department=department,
             )
             OrderEmployeeHistory.objects.create(
                 order=order,
                 employee=selected_employee,
             )
-            print(f"Назначена задача: {selected_employee.get_full_name()} для отдела {department.title}")
+            print(
+                f"Назначена задача: {selected_employee.get_full_name()} для отдела {department.title}"
+            )
         else:
-            print(f"Нет подходящих сотрудников для статуса {new_status} и позиции {position} в отделе {department.title}")
+            print(
+                f"Нет подходящих сотрудников для статуса {new_status} и позиции {position} в отделе {department.title}"
+            )

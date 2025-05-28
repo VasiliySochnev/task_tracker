@@ -1,59 +1,179 @@
-from rest_framework.serializers import ModelSerializer
+from django.contrib.auth.models import Group
 from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
+
 from users.models import Client, Department, Employee, User
+from users.validators import B2BValidator
 
 
 class UserSerializer(ModelSerializer):
+    """
+    Сериализатор для модели User.
+    Позволяет сериализовать/десериализовать пользователей с группами и правами.
+    """
+
+    groups = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Group.objects.all(), required=False
+    )
+
     class Meta:
         model = User
         fields = "__all__"
 
     def create(self, validated_data):
-        user = User(**validated_data)
-        user.set_password(validated_data["password"])  # Хешируем пароль
-        user.save()
-        return user
+        """
+        Создаёт пользователя и устанавливает пароль, группы и права.
+        """
+        password = validated_data.pop("password", None)
+        groups = validated_data.pop("groups", [])
+        permissions = validated_data.pop("user_permissions", [])
+
+        instance = self.Meta.model(**validated_data)
+
+        # Установка пароля через set_password для хеширования
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+
+        # Установка прав и групп, если они указаны
+        if permissions:
+            instance.user_permissions.set(permissions)
+        if groups:
+            instance.groups.set(groups)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        """
+        Обновляет данные пользователя, включая пароль, права и группы.
+        """
+        password = validated_data.pop("password", None)
+        groups = validated_data.pop("groups", None)
+        permissions = validated_data.pop("user_permissions", None)
+
+        # Обновление всех остальных полей
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+
+        if permissions is not None:
+            instance.user_permissions.set(permissions)
+
+        if groups is not None:
+            instance.groups.set(groups)
+
+        return instance
 
 
 class DepartmentSerializer(ModelSerializer):
+    """
+    Сериализатор для модели Department (отдел).
+    """
+
     class Meta:
         model = Department
         fields = "__all__"
 
 
 class EmployeeSerializer(ModelSerializer):
+    """
+    Сериализатор для модели Employee (сотрудник).
+    Добавляет валидацию, ограничивающую работу сотрудника
+    либо в отделе, либо в зоне отгрузки (за исключением определённых должностей).
+    """
+
     class Meta:
         model = Employee
         fields = "__all__"
 
+    def validate(self, attrs):
+        """
+        Проверяет, что сотрудник работает либо в отделе, либо в зоне отгрузки,
+        но не одновременно и не без них, если он не относится к исключениям.
+        """
+        position = attrs.get("position")
+        department = attrs.get("department")
+        shipping_zone = attrs.get("shipping_zone")
+
+        exempt_positions = [
+            "менеджер по продажам",
+            "складской менеджер",
+            "сотрудник отдела кадров",
+        ]
+
+        if position not in exempt_positions:
+            # Логическая проверка: только одно из двух должно быть указано
+            if bool(department) == bool(shipping_zone):
+                raise serializers.ValidationError(
+                    "Если сотрудник не менеджер по продажам, не складской менеджер и не из отдела кадров, "
+                    "то он может работать либо в отделе, либо в зоне отгрузки (но не в обоих и не без них одновременно)."
+                )
+
+        return attrs
+
     def create(self, validated_data):
+        """
+        Создаёт объект сотрудника и устанавливает хешированный пароль.
+        """
+        password = validated_data.pop("password", None)
         user = Employee(**validated_data)
-        user.set_password(validated_data["password"])  # Хешируем пароль
+        if password:
+            user.set_password(password)
         user.save()
         return user
 
 
 class BusyEmployeeSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для получения информации о занятых сотрудниках.
+    Включает количество активных задач и их названия (статусы).
+    """
+
     active_tasks_count = serializers.IntegerField()
     active_task_names = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
-        fields = ['id', 'position', 'active_tasks_count', 'active_task_names']
+        fields = ["id", "position", "active_tasks_count", "active_task_names"]
 
     def get_active_task_names(self, obj):
-        # Предполагается, что у Task есть поле employee и название в name
-        return list(obj.tasks.filter(is_active=True).values_list('status', flat=True))
-
+        """
+        Возвращает список названий (статусов) активных задач сотрудника.
+        """
+        return list(obj.tasks.filter(is_active=True).values_list("status", flat=True))
 
 
 class ClientSerializer(ModelSerializer):
+    """
+    Сериализатор для модели Client (клиент).
+    Включает B2B валидацию для обязательных юридических данных.
+    """
+
     class Meta:
         model = Client
         fields = "__all__"
+        validators = [
+            B2BValidator(
+                client_type_field="client_type",
+                organization_name_field="organization_name",
+                o_g_r_n_field="o_g_r_n",
+                i_n_n_field="i_n_n",
+                bank_account_field="bank_account",
+            )
+        ]
 
     def create(self, validated_data):
+        """
+        Создаёт клиента и устанавливает пароль с хешированием.
+        """
+        password = validated_data.pop("password", None)
         user = Client(**validated_data)
-        user.set_password(validated_data["password"])  # Хешируем пароль
+        if password:
+            user.set_password(password)
         user.save()
         return user

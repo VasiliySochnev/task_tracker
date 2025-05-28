@@ -1,0 +1,44 @@
+[
+  {
+    "model": "users.department",
+    "pk": 1,
+    "fields": {
+      "title": "инструмент"
+    }
+  },
+  {
+    "model": "users.department",
+    "pk": 2,
+    "fields": {
+      "title": "электрика"
+    }
+  },
+  {
+    "model": "users.department",
+    "pk": 3,
+    "fields": {
+      "title": "сухие смеси"
+    }
+  },
+  {
+    "model": "users.department",
+    "pk": 4,
+    "fields": {
+      "title": "сантехника"
+    }
+  },
+  {
+    "model": "users.department",
+    "pk": 5,
+    "fields": {
+      "title": "метизы"
+    }
+  },
+  {
+    "model": "users.department",
+    "pk": 6,
+    "fields": {
+      "title": "лкп и гсм"
+    }
+  }
+]

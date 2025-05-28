@@ -1,18 +1,13 @@
-from rest_framework.routers import DefaultRouter
-from tracker.apps import TrackerConfig
 from django.urls import path
-from tracker.views import (
-    AddressViewSet,
-    OrderEmployeeHistoryViewSet,
-    OrderStatusHistoryViewSet,
-    OrderViewSet,
-    ProductViewSet,
-    TaskViewSet,
-    order_detail,
-    get_product_price,
-    ImportantTasksView,
-    TaskSummaryView,
-)
+from rest_framework.routers import DefaultRouter
+
+from tracker.apps import TrackerConfig
+from tracker.views import (AddressViewSet, ImportantTasksView,
+                           LeastBusyEmployeesView, OrderEmployeeHistoryViewSet,
+                           OrderStatusHistoryViewSet, OrderViewSet,
+                           ProductViewSet, ShippingZoneViewSet,
+                           TaskSummaryView, TaskViewSet, get_product_price,
+                           order_detail)
 
 app_name = TrackerConfig.name
 
@@ -32,10 +27,19 @@ router.register(
     OrderEmployeeHistoryViewSet,
     basename="orders_employees_stories",
 )
+router.register(r"shipping_zones", ShippingZoneViewSet, basename="shipping_zones")
+
 
 urlpatterns = [
-    path('admin/get-product-price/', get_product_price, name='get_product_price'),
-    path('order_detail/<int:order_id>/', order_detail, name='order_detail'),
-    path('tasks/important/', ImportantTasksView.as_view(), name='important_tasks'),
-    path("tasks/summary/<int:order_id>/", TaskSummaryView.as_view(), name="task-summary"),
+    path("admin/get-product-price/", get_product_price, name="get_product_price"),
+    path("order_detail/<int:order_id>/", order_detail, name="order_detail"),
+    path("tasks/important/<int:order_id>/", ImportantTasksView.as_view(), name="important_tasks"),
+    path(
+        "tasks/summary/<int:order_id>/", TaskSummaryView.as_view(), name="task-summary"
+    ),
+    path(
+        "least_busy_employees/",
+        LeastBusyEmployeesView.as_view(),
+        name="least_busy_employees",
+    ),
 ] + router.urls
